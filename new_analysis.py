@@ -1,4 +1,5 @@
 #%%
+
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -6,13 +7,7 @@ import seaborn as sns
 from scipy import stats
 
 # Define capability benchmarks
-
-# ["logiqa", "piqa", "hellaswag", "winogrande", 'superglue_copa', "medqa_4options", "arc_challenge", "mmlu", "minerva_math", "lambada_openai", "gsm8k", "bbh"]
-
-common_sense = ['logiqa', 'piqa', 'hellaswag', 'winogrande', 'superglue_copa', 'lambada_openai', 'bbh']
-math = ['minerva_math', 'gsm8k']
-knowledge = ['mmlu', 'medqa_4options', 'arc_challenge']
-cap_names = math
+cap_names = ["logiqa", "piqa", "hellaswag", "winogrande", 'superglue_copa', "medqa_4options", "arc_challenge", "mmlu", "minerva_math", "lambada_openai", "gsm8k", "bbh"]
 
 def load_data():
     """
@@ -43,12 +38,12 @@ base_model_df, chat_model_df, evals_df = load_data()
 find_nans(base_model_df)
 find_nans(chat_model_df)
 
-
 #%%
+
 
 ##### RUN ANALYSIS ON BASE AND CHAT MODELS #####
 
-def run_analysis(model_df, evals_df, cap_names, label, correlation_type = "spearman"):
+def run_capabilities_correlations(model_df, evals_df, cap_names, label, correlation_type = "spearman"):
     """
     Runs normalization, computes and plots correlation matrix, performs PCA, and prints analysis results. Returns modified evals_df and model_df, and eigenvalues and correlation matrix from PCA.
 
@@ -113,7 +108,7 @@ def run_analysis(model_df, evals_df, cap_names, label, correlation_type = "spear
 
     print("\nSAFETY CORRELATIONS:")
     for safety_name in safety_names:
-        print(f"{safety_name} {100*evals_df_copy.loc[safety_name, f'{label}_{correlation_type}_correlations']:.1f}")
+        print(f"{safety_name} {100*evals_df_copy.loc[safety_name, f'{label}_{correlation_type}_correlations']:.2f}")
 
     print("\nMODEL SCORES:")
     model_cap_dict = dict(sorted(list(zip(model_df.index, model_cap_score)), key=lambda item: item[1]))
@@ -126,73 +121,8 @@ def run_analysis(model_df, evals_df, cap_names, label, correlation_type = "spear
 
     return evals_df_copy, model_df_copy, eigenvals, cap_matrix
 
-# evals_df, base_model_df, base_eigenvals, base_cap_matrix = run_analysis(base_model_df, evals_df, cap_names, "Base", "spearman")
-evals_df, combined_df, chat_eigenvals, chat_cap_matrix = run_analysis(chat_model_df, evals_df, cap_names, "Chat", "spearman")
-
-#%%
-
-def plot_compute_versus_score(model_df, evals_df, cap_names, label):
-    """
-    Plots the capabilities score against the compute of the model.
-    """
-    fig, ax = plt.subplots(1, 1)
-    ax.scatter(model_df["FLOP"], model_df["score"], color='blue', s=10)
-    ax.set_title(f"Capabilities Score vs. FLOP ({label})", fontsize=20)
-    ax.set_xlabel("FLOP", fontsize=18)
-    ax.set_ylabel("Capabilities Score", fontsize=18)
-    ax.tick_params(axis='x', labelsize=14)
-    ax.tick_params(axis='y', labelsize=14)
-    # If it is Llama 3.1 b, mark it with an x
-    for i, model in enumerate(model_df.index):
-        if "Meta-Llama-3.1" in model:
-            ax.scatter(model_df["FLOP"].iloc[i], model_df["score"].iloc[i], color='red', s=100, marker='x')
-    # Set log x axis
-    ax.set_xscale('log')
-    ax.grid(linestyle='--')
-    fig.tight_layout()
-    plt.show()
-
-    pearson_corr, _ = stats.pearsonr(model_df["FLOP"], model_df["score"])
-    spearman_corr, _ = stats.spearmanr(model_df["FLOP"], model_df["score"])
-
-    print(f"Pearson Correlation: {pearson_corr}")
-    print(f"Spearman Correlation: {spearman_corr}")
-
-plot_compute_versus_score(combined_df, evals_df, cap_names, "Combined")
-
-#%%
-
-def plot_size_versus_score(model_df, evals_df, cap_names, label):
-    """
-    Plots the capabilities score against the size of the model.
-    """
-    fig, ax = plt.subplots(1, 1)
-    ax.scatter(model_df["model_size"], model_df["score"], color='blue', s=10)
-    ax.set_title(f"Capabilities Score vs. model_size ({label})", fontsize=20)
-    ax.set_xlabel("model_size", fontsize=18)
-    ax.set_ylabel("Capabilities Score", fontsize=18)
-    ax.tick_params(axis='x', labelsize=14)
-    ax.tick_params(axis='y', labelsize=14)
-    # If it is Llama 3.1 b, mark it with an x
-    for i, model in enumerate(model_df.index):
-        if "Meta-Llama-3.1" in model:
-            ax.scatter(model_df["model_size"].iloc[i], model_df["score"].iloc[i], color='red', s=100, marker='x')
-    # Set log x axis
-    ax.set_xscale('log')
-    ax.grid(linestyle='--')
-    fig.tight_layout()
-    plt.show()
-
-    pearson_corr, _ = stats.pearsonr(model_df["model_size"], model_df["score"])
-    spearman_corr, _ = stats.spearmanr(model_df["model_size"], model_df["score"])
-
-    print(f"Pearson Correlation: {pearson_corr}")
-    print(f"Spearman Correlation: {spearman_corr}")
-
-plot_size_versus_score(combined_df, evals_df, cap_names, "Combined")
-
-#%%
-
+evals_df, base_model_df, base_eigenvals, base_cap_matrix = run_capabilities_correlations(base_model_df, evals_df, cap_names, "Base", "spearman")
+evals_df, chat_model_df, chat_eigenvals, chat_cap_matrix = run_capabilities_correlations(chat_model_df, evals_df, cap_names, "Chat", "spearman")
 
 ##### PLOTTING DEMOS #####
 
@@ -293,4 +223,169 @@ plot_safety_vs_capabilities(
     xlim=1
 )
 plot_capabilities_correlation_matrix(chat_cap_matrix, "Chat Capabilities Correlations")
+
+#%%
+
+# New section: FLOP Analysis
+
+def run_compute_correlations(model_df, evals_df, cap_names, label, correlation_type="spearman"):
+    """
+    Runs analysis using FLOP as the compute metric, computes correlations, and prints analysis results.
+    Returns modified evals_df and model_df, and correlation matrix.
+
+    We compute the correlation of each benchmark with FLOP, dropping the rows that contain NaNs for FLOP or the benchmark.
+    """
+
+    # Prepare data
+    analysis_df = model_df.drop(columns=["model_size", "name", "type"])
+    analysis_df = analysis_df.dropna(subset=['FLOP'])  # Drop rows where FLOP is NaN
+    analysis_df = analysis_df.dropna(axis=1, how='all')
+
+    safety_names = [col for col in analysis_df.columns if col not in cap_names and col != 'FLOP']
+
+    # Update dataframes
+    evals_df_copy = evals_df.copy()
+
+    # Compute correlations for each evaluation and update dataframes
+    for benchmark in safety_names + cap_names:
+        benchmark_df = analysis_df[[benchmark, 'FLOP']].dropna()
+        corr_value = benchmark_df.corr(method=correlation_type).to_numpy()[0, 1]
+        evals_df_copy.loc[benchmark, f"{label}_flop_{correlation_type}_correlations"] = corr_value
+
+    # Print analysis results
+    print(f"\n***** Results for {label} (FLOP Analysis) *****")
+
+    print("\nCOMPUTE CORRELATIONS WITH FLOP:")
+    for cap_name in cap_names:
+        print(f"{cap_name} {100*evals_df_copy.loc[cap_name, f'{label}_flop_{correlation_type}_correlations']:.2f}")
+
+    print("\nSAFETY CORRELATIONS WITH FLOP:")
+    for safety_name in safety_names:
+        print(f"{safety_name} {100*evals_df_copy.loc[safety_name, f'{label}_flop_{correlation_type}_correlations']:.2f}")
+
+    print("\nMODEL FLOPS:")
+    model_flop_dict = dict(sorted(list(zip(analysis_df.index, analysis_df['FLOP'])), key=lambda item: item[1]))
+    for k, v in model_flop_dict.items():
+        print(f"{k}, {v:.2e}")
+
+    # Update model dataframe
+    model_df_copy = model_df.copy()
+
+    return evals_df_copy, model_df_copy#, cap_matrix
+
+evals_df, base_model_df = run_compute_correlations(base_model_df, evals_df, cap_names, "Base", "spearman")
+evals_df, chat_model_df = run_compute_correlations(chat_model_df, evals_df, cap_names, "Chat", "spearman")
 # %%
+
+# plt.rcParams['text.usetex'] = False
+
+from scipy import stats
+##################################################
+## PLOTS TEMPLATE
+##################################################
+
+def plot_template(x_axis, 
+                  benchmark_name,
+                  model_df,
+                  class_type,
+                  y_label,
+                  x_label,
+                  legend_pos,
+                  title,
+                  path,
+                  xlim,
+                  bad=True
+                 ):
+
+    color = 'tab:blue'# if bad else 'green'
+    
+    model_df_2 = model_df.dropna(subset=[x_axis, benchmark_name])
+    gscores = np.log10(model_df_2[x_axis].to_numpy())
+    benchmark_scores = model_df_2[benchmark_name].to_numpy()
+
+    fig, ax = plt.subplots(1, 1)
+
+    plt.rcParams.update({
+       "text.usetex": True,
+    #    "font.family": "serif"
+   })
+    
+    # Scatter plot
+    ax.scatter(gscores, benchmark_scores, color=color, s=10, alpha=0.5)
+    
+    # Regression plot
+    sns.regplot(x=gscores, y=benchmark_scores, ax=ax, color=color, 
+                scatter=False, line_kws={'linewidth': 2})
+    
+    # Print regression line details
+    slope, intercept, r_value, p_value, std_err = stats.linregress(gscores, benchmark_scores)
+    print(f"Regression line: y = {slope:.4f}x + {intercept:.4f}")
+    print(f"R-squared: {r_value**2:.4f}")
+    
+    ax.grid(linestyle='--')
+    ax.set_ylabel(y_label, fontsize=18)
+    # plt.rcParams['text.usetex'] = True
+    ax.set_xlabel(x_label, fontsize=18)
+    # plt.rcParams['text.usetex'] = False
+    ax.tick_params(axis='x', labelsize=14)
+    ax.tick_params(axis='y', labelsize=14)
+    
+    ax.set_xlim([min(gscores)-xlim, max(gscores)+xlim])
+
+    if legend_pos == "":
+        legend_pos = ['right', 'bottom']
+    if class_type != "":
+        ax.text(0.95, 0.07, 'Spearman Correlation: 94.3%', 
+                transform=ax.transAxes,  # This uses axis coordinates
+                fontsize=15,
+                color="black",
+                bbox=dict(facecolor='white', 
+                        edgecolor='gray', 
+                        alpha=1, 
+                        pad=5,
+                        boxstyle='round,pad=0.5'),
+                ha='right',  # Horizontal alignment
+                va='bottom'  # Vertical alignment
+            )
+
+
+    # ax.legend(prop={'size': 12}, loc=legend_pos)
+    ax.set_title(title, fontsize=20)
+    fig.tight_layout()
+    fig.savefig(path)
+    plt.show()
+
+    pearson_corr, _ = stats.pearsonr(gscores, benchmark_scores)
+    spearman_corr, _ = stats.spearmanr(gscores, benchmark_scores)
+
+    print(f"Pearson Correlation: {pearson_corr}")
+    print(f"Spearman Correlation: {spearman_corr}")
+
+#%%
+
+
+x_axis = "FLOP"  # Metric on x-axis. Usually is "score", but for calibration is "mmlu" or relevant benchmark
+benchmark_name = "score"  # Name of the benchmark to consider in y-axis
+model_df = chat_model_df  # dataframe to consider
+class_type = "chat"   # Whether we are considering chat or base models
+y_label = "Capabilities Score"  # y label
+x_label = "$\log$_{10}(FLOP)"  # x label
+legend_pos = "upper right"  # position of legend
+title = "Capabilities Score vs Compute"  # Title of the plot
+path = os.path.expanduser(f"~/safety_vs_capabilities/new_results/plots/{benchmark_name}_vs_{x_axis}_{class_type}.pdf")  # path to save the plot
+xlim = 0.1
+plot_template(x_axis, 
+              benchmark_name,
+              model_df,
+              class_type,
+              y_label,
+              x_label,
+              legend_pos,
+              title,
+              path,
+              xlim
+            )
+
+#%%
+# %%
+
